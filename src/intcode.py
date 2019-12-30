@@ -14,16 +14,15 @@ class StandardOutput(Output):
     def write(self, data):
         print('> %s' % data)
 
-def run(state, i=StandardInput(), o=StandardOutput()):
-    ip = 0
+def run(state, i=StandardInput(), o=StandardOutput(), ip=0):
     running = True
 
     while running == True:
-        (should_continue, next) = execute_op(state, ip, i, o)
+        (should_continue, next, halted) = execute_op(state, ip, i, o)
         running = should_continue
         ip = next
 
-    return state[0]
+    return state, ip, halted
 
 def read_parameter(state, param, param_mode):
     if param_mode == 0:
@@ -46,62 +45,60 @@ def execute_op(state, ip, input, output):
         r = state[ip+3]
 
         state[r] = x + y
-        print('= %d' % (state[r]))
-        return (True, ip + 4)
+        return (True, ip + 4, False)
     elif opcode == 2:
         x = read_parameter(state, ip + 1, param_mode_1)
         y = read_parameter(state, ip + 2, param_mode_2)
         r = state[ip+3]
 
         state[r] = x * y
-        print('= %d' % (state[r]))
-        return (True, ip + 4)
+        return (True, ip + 4, False)
     elif opcode == 3:
         r = state[ip+1]
         value = input.read()
         state[r] = value
 
-        return (True, ip + 2)
+        return (True, ip + 2, False)
     elif opcode == 4:
         x = read_parameter(state, ip + 1, param_mode_1)
         output.write(x)
         
-        return (True, ip + 2)
+        return (False, ip + 2, False)
     elif opcode == 5:
         x = read_parameter(state, ip + 1, param_mode_1)
         y = read_parameter(state, ip + 2, param_mode_2)
         if x != 0:
-            return (True, y)
+            return (True, y, False)
         else:
-            return (True, ip + 3)
+            return (True, ip + 3, False)
     elif opcode == 6:
         x = read_parameter(state, ip + 1, param_mode_1)
         y = read_parameter(state, ip + 2, param_mode_2)
         if x == 0:
-            return (True, y)
+            return (True, y, False)
         else:
-            return (True, ip + 3)
+            return (True, ip + 3, False)
     elif opcode == 7:
         x = read_parameter(state, ip + 1, param_mode_1)
         y = read_parameter(state, ip + 2, param_mode_2)
         r = state[ip + 3]
         if x < y:
             state[r] = 1
-            return (True, ip + 4)
+            return (True, ip + 4, False)
         else:
             state[r] = 0
-            return (True, ip + 4)
+            return (True, ip + 4, False)
     elif opcode == 8:
         x = read_parameter(state, ip + 1, param_mode_1)
         y = read_parameter(state, ip + 2, param_mode_2)
         r = state[ip + 3]
         if x == y:
             state[r] = 1
-            return (True, ip + 4)
+            return (True, ip + 4, False)
         else:
             state[r] = 0
-            return (True, ip + 4)
+            return (True, ip + 4, False)
     elif opcode == 99:
-        return (False, ip + 1)
+        return (False, ip + 1, True)
     else:
         raise Exception('Unknown opcode: %s' % state[ip])
